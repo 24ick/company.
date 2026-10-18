@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>就職偏差値サーチ</title>
+<style>
+:root{
+  --bg:#f6f5f1; --panel:#ffffff; --ink:#1c2230; --sub:#5b6270; --line:#dfdcd3;
+  --accent:#1e3a5f; --accent2:#8a6d3b; --chip:#eef1f5; --chip-b:#d8e0ea;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14171c; --panel:#1c2028; --ink:#e8e6df; --sub:#9aa1ad; --line:#2c313b;
+    --accent:#7fa8d9; --accent2:#d4b483; --chip:#232833; --chip-b:#333945;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14171c; --panel:#1c2028; --ink:#e8e6df; --sub:#9aa1ad; --line:#2c313b;
+  --accent:#7fa8d9; --accent2:#d4b483; --chip:#232833; --chip-b:#333945;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Sans","Yu Gothic",system-ui,-apple-system,"Segoe UI",sans-serif;
+  line-height:1.6;
+}
+.wrap{max-width:640px; margin:0 auto; padding:20px 16px 48px;}
+header{margin-bottom:18px;}
+h1{font-size:1.3rem; margin:0 0 4px; letter-spacing:.01em;}
+.sub{color:var(--sub); font-size:.82rem; margin:0;}
+.searchbox{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:5;
+  background:var(--bg); padding:10px 0 8px;
+}
+#q{
+  width:100%; padding:12px 14px; font-size:1rem; border-radius:10px;
+  border:1px solid var(--line); background:var(--panel); color:var(--ink);
+  outline:none;
+}
+#q:focus{border-color:var(--accent);}
+#results{margin-top:10px;}
+.hit{
+  display:flex; align-items:center; gap:12px; padding:12px 14px;
+  background:var(--panel); border:1px solid var(--line); border-radius:10px; margin-bottom:8px;
+}
+.rank{
+  min-width:44px; height:44px; border-radius:8px; background:var(--accent);
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:1rem; flex-shrink:0;
+}
+.hitname{font-size:.98rem;}
+.hitmeta{color:var(--sub); font-size:.78rem; margin-top:2px;}
+.empty{color:var(--sub); font-size:.85rem; padding:10px 2px;}
+section.browse{margin-top:24px;}
+.browse h2{font-size:.95rem; color:var(--sub); font-weight:600; margin:0 0 10px;}
+details.tier{
+  border:1px solid var(--line); border-radius:10px; margin-bottom:6px; background:var(--panel); overflow:hidden;
+}
+details.tier summary{
+  list-style:none; cursor:pointer; display:flex; align-items:center; gap:12px; padding:10px 12px;
+}
+details.tier summary::-webkit-details-marker{display:none;}
+.badge{
+  min-width:38px; height:38px; border-radius:8px; background:var(--chip); border:1px solid var(--chip-b);
+  color:var(--ink); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.9rem; flex-shrink:0;
+}
+.count{color:var(--sub); font-size:.78rem; margin-left:auto;}
+.companies{padding:0 14px 14px; display:flex; flex-wrap:wrap; gap:6px;}
+.co{
+  background:var(--chip); border:1px solid var(--chip-b); color:var(--ink);
+  padding:4px 9px; border-radius:6px; font-size:.8rem;
+}
+.grouplabel{
+  margin:14px 0 8px; padding:7px 12px; background:var(--accent); color:#fff;
+  border-radius:8px; font-size:.78rem; font-weight:600; text-align:center;
+}
+footer{margin-top:28px; color:var(--sub); font-size:.75rem;}
+footer details{margin-top:6px;}
+footer summary{cursor:pointer;}
+footer ul{margin:8px 0 0; padding-left:1.2em;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>就職偏差値サーチ</h1>
+  <p class="sub">2026年度 文系就職偏差値表（8/2更新）をもとに、企業名から偏差値・ランクを検索。下の一覧から偏差値ごとの企業も見られます。</p>
+</header>
+
+<div class="searchbox">
+  <input id="q" type="text" placeholder="企業名を入力（例：三菱商事）" autocomplete="off">
+</div>
+<div id="results"></div>
+
+<section class="browse">
+  <h2>偏差値ランク一覧（75〜50）</h2>
+  <div id="tiers"></div>
+</section>
+
+<footer>
+  <p>出典：ネット上で共有されている非公式の「文系就職偏差値表」の画像をもとに作成。管理人独自の評価であり、企業の公式な評価ではありません。OCRでの読み取りのため誤りが含まれる可能性があります。</p>
+  <details>
+    <summary>注記（作成者の想定条件）</summary>
+    <ul>
+      <li>外資投資銀行はフロント職を想定</li>
+      <li>外資ITは営業職を想定</li>
+      <li>特別表記がなければ全国転勤あり通常総合職を想定</li>
+      <li>金融専門職はIT部門を除外</li>
+      <li>新聞社は記者職以外-2</li>
+      <li>電力会社は分社化後のグループも包含</li>
+      <li>企業名の前に"※"がある企業は暫定評価</li>
+    </ul>
+  </details>
+</footer>
+</div>
+
+<script>
+const T = {
+75:"GoldmanSachs MorganStanley JPMorgan",
+74:"BankofAmerica UBS Citi Lazard",
+73:"三菱商事 三井物産 三井不動産 Google Barclays DeutscheBank McKinsey&Company BostonConsultingGroup Bain&Company ATKearney GSAM",
+72:"伊藤忠商事 三菱地所 日本銀行 HoulihanLokey CreditAgricole HSBC BlackRock Fidelity みずほ証券(IBD,GM) MUMSS 野村證券(IBD,GM,リサーチ) SMBC日興証券(IBD,GM) BNPParibas PwC(Strategy&) RolandBerger ArthurD.Little OliverWyman",
+71:"住友商事 丸紅 Microsoft P&G(マーケ) SocieteGenerale MUMSS(IBD-M&A以外) 三菱UFJ銀行(GM) 大和証券(GM) 野村アセットマネジメント(運用) アモーヴァ・アセットマネジメント(運用) 東京海上日動(SPEC) 日本政策投資銀行 ドリームインキュベータ ZSAssociates 経営共創基盤 コーポレートディレクション Accenture(戦略) Bloomberg 医学書院",
+70:"Cisco 大和証券(IBD) AmazonWebServices アセットマネジメントOne(運用) 三井住友DSAM(運用) ニッセイAM(運用) 野村AM(マーケ) 農林中央金庫(GI) 三井住友銀行(GM) 三菱UFJ銀行(戦略財務会計) みずほFG(GCF) 野村総合研究所(経営コンサル) Mercer KPMGFAS EYParthenon YCPSolidiance Simon-Kucher KornFerry ヒューリック 日本郵船 商船三井 集英社 講談社 小学館",
+69:"PwCアドバイザリー KPMGコンサルティング(戦略) 三菱総合研究所*MRI* P&Eディレクションズ 三菱UFJ銀行(グローバル) 三井住友銀行(グローバルバンキング) 電通 日本テレビ テレビ朝日 TBS 東京海上AM アセットマネジメントOne みずほFG(GM&AM) 日本生命(資産運用) 三井住友海上(スペシフィック) 国際協力銀行*JBIC* 日本取引所グループ*JPX* VMware Amazon(Consumer) JAFCO",
+68:"PwCコンサルティング(XVS) 野村総合研究所*NRI*(AE) フロンティアマネジメント 三井住友DSAM ニッセイアセットマネジメント 三井住友トラストAM(運用) 野村AM(IT) 東京建物 東急不動産 Unilever(マーケ) 国際協力機構*JICA* 国際石油開発帝石*INPEX* 伊藤忠丸紅鉄鋼 文藝春秋 フジテレビジョン 朝日放送テレビ 関西テレビ 読売テレビ 毎日放送",
+67:"PwCコンサルティング デロイトトーマツコンサルティング*DTC* アビームコンサルティング(戦略) デロイトトーマツファイナンシャルアドバイザリー*DTFA* 三菱UFJリサーチ&コンサルティング*MURC*(コンサル/シンクタンク) 日本総合研究所*JRI*(コンサル) 森ビル 森トラスト 大和アセットマネジメント 三菱UFJアセットマネジメント アモーヴァAM(ミドルバック) ケネディクス 博報堂 テレビ東京 白泉社 日経BP 日本経済新聞社 東京ガス 三菱UFJ銀行(ウェルマネ,グローバルIT) SAP 日本ロレアル(マーケ)",
+66:"EYストラテジーアンドコンサルティング KPMGコンサルティング 日本IBM(戦略) AONソリューションズ B&DX デロイトトーマツリスクアドバイザリー*DTRA* PwCJapan監査法人 EY新日本 あずさ 三菱UFJ銀行(itオープン/デジタル企画) 農林中央金庫 SONYグループ 花王(マーケ) 資生堂(マーケ) Salesforce 味の素 任天堂 キーエンス ディスコ テレビ大阪 りそな銀行(専門職コース) 三井住友トラストAM 豊田通商 双日 野村不動産 住友不動産 地主*日本商業開発* JR東海 日本貿易振興機構 川崎汽船",
+65:"三菱UFJ銀行 東京海上日動 Accenture(ビジネスコンサル,デジタルコンサル) 日本IBM(コンサル) アビームコンサルティング 日本経営システム 日本Oracle Capgemini dtvs 三井住友銀行(ITデジタル) M&Aキャピタルパートナーズ*MACP* P&G(マーケ以外) トヨタ サントリー 富士フイルム ENEOS JT 東京中小企業投資育成*SBIC* レオス・キャピタルワークス 武田薬品工業 ファナック ユニ・チャーム(マーケ) USJ(マーケ) NTT都市開発 日鉄興和不動産 朝日新聞 共同通信 東洋経済新報社 ダイヤモンド社 スマートニュース 大阪ガス",
+64:"NTTデータ フォーティエンスコンサルティング*クニエ* ベイカレントコンサルティング 三井住友銀行 三菱UFJ信託銀行 日本生命 日本IBM(SE) Accenture(SE) みずほFG(RC) NTTデータ経営研究所 日本M&Aセンター M&A総合研究所 リクルート キリン みずほFG(RES) 格付投資情報センター*R&I* 東京エレクトロン 日本製鉄 旭化成 AGC ソニーミュージック バンダイナムコ メタルワン 第一三共 アステラス製薬 中外製薬 東海テレビ 中京テレビ CBCテレビ 名古屋テレビ 阪急阪神HD 関西電力 東急 JERA 伊藤忠都市開発 ENEOSXplora",
+63:"シグマクシス 大和総研*DIR*(コンサル) DTCY NTTドコモ KDDI 日鉄ソリューションズ ストライク 三井住友信託銀行 三井住友海上 野村證券 オリックス 第一生命 信金中央金庫 みずほFG(ITシステム) 全国銀行協会 JR東日本 首都高速道路 東京メトロ 小田急電鉄 J&J ユニリーバ(マーケ以外) 三菱重工 日立製作所 デンソー 三井化学 東レ 石油資源開発*JAPEX* 出光興産 三井海洋開発 小松製作所 3Mジャパン エーザイ 住友電気工業 アサヒ ONE Avex ローカル局(在阪・在名除く) 読売新聞 KADOKAWA 新潮社 マガジンハウス プレジデント社 東宝 三井物産都市開発 みずほFG 兼松 鹿島建設",
+62:"SoftBank エムスリー DeNA LINEヤフー 日本HP パナソニック 富士通 電通総研 NTT東日本 ヒューレット・パッカードエンタープライズ*HPE* 商工組合中央金庫 住友生命 明治安田生命 SMBC日興証券 大和証券 野村信託銀行 AIG損害保険 JA共済 日本銀行(特定職(業務)) 日本財団 日本証券金融 証券保管振替機構 損保料率算出機構 日本貿易保険 三井住友カード トーア再保険 東京商工会議所 日揮 JFEスチール 三菱ケミカル 住友化学 信越化学工業 東邦ガス 中部電力 東京電力 近鉄GHD 本田技研工業 日清食品 日清製粉 明治 キッコーマン ネスレ日本 長瀬産業 JFE商事 協和キリン 大塚製薬 クボタ ADK Amazon(Operation) JSR 日本音楽著作権協会*JASRAC* 三井不動産レジデンシャル 損害保険ジャパン 日鉄エンジニアリング JFEエンジニアリング 松竹 スカパーJSAT シンプレクス 日立コンサルティング 朝日新聞出版 NHK出版 早慶MARCH(大学職員) 日本中央競馬会 安田不動産 大林組",
+61:"中央日本土地建物 REVAMP CambridgeTechnologyPartners ジャストシステム サイバーエージェント JR東日本企画 電通デジタル NTT西日本 日本電気*NEC* 伊藤忠テクノソリューションズ*CTC* 三井住友銀行(リテール) オリックス銀行 SBI新生銀行 SMBC信託 三菱UFJモルガンスタンレー証券 JCB 伊藤忠エネクス 日鉄物産 阪和興業 住友金属鉱山 日産化学 豊田自動織機 日産 島津製作所 川崎重工業 ダイキン IHI 塩野義製薬 JX金属 三菱ガス化学 村田製作所 ブリヂストン 帝人 積水化学 田辺三菱 日本ロレアル(マーケ以外) 東ソー ライオン バンダイ カゴメ サッポロビール アッヴィ アドバンテスト エリクソン 飯野海運 コスモエネルギー 千代田化工 東武鉄道 西武鉄道 京浜急行電鉄 京王電鉄 京阪HD JAL ANA JR西日本 スクエアエニックス コナミデジタルエンタテインメント WOWOW 資生堂 花王 日本郵政不動産 ダイビル オリックス不動産 三菱商事都市開発 関関同立(大学職員) 清水建設 大成建設 竹中工務店",
+60:"日本総合研究所*JRI*(IT) 博報堂コンサルティング ウルシステムズ 楽天グループ トレンドマイクロ DellTechnologies フューチャー 日本ユニシス*BIPROGY* アフラック アサヒ飲料 グリコ ユニ・チャーム 三菱倉庫 三菱マテリアル TOTO いすゞ自動車 シマノ アイシン 大陽日酸 京セラ レゾナック セガサミー カプコン オリエンタルランド KIOXIA キヤノン クラレ オムロン 森永乳業 栗田工業 スクリーン 東芝 古河電気工業 住友重機械工業 三井金属 住友林業(業務企画職) ロート製薬 大正製薬 オリンパス 神戸製鋼 JA全農 安川電機 ヤマハ UR都市機構 平和不動産 小田急不動産 キングレコード 日本工営 建設技術研究所 パシフィックコンサルタンツ 三菱HCキャピタル 日本政策金融公庫 横浜銀行 みずほ証券 日本証券業協会 日本損害保険協会 生命保険協会 電源開発 九州電力 東北電力 毎日新聞 中日新聞 岩谷産業 NSユナイテッド海運 東映 ボッシュ KOSE McCann サンケイビル",
+59:"NTTデータ子会社上位(システム技術/先端技術) NTTドコモソリューションズ レコフ 日本能率協会コンサルティング*JMAC* スカイライト イグニションポイント リブコンサルティング CLIS 三菱UFJインフォメーションテクノロジー*muit* NYKBusinessSystems 大和総研*DIR*(se) JSOL アバナード ベネッセ 東急エージェンシー ニッスイ ブラザー工業 Nikon セイコーエプソン ミツカン マンダム 京成電鉄 三井倉庫HD 不二製油 カルビー 日本ハム 森永製菓 NYKバルクプロジェクト 住友商事グローバルメタルズ 岡谷鋼機 稲畑産業 東京センチュリー 三井住友ファイナンス&リース 芙蓉総合リース みずほFG(RB) 上田八木短資 東京短資 セントラル短資 東京海上日動あんしん生命 日本郵便 東洋エンジニアリング 扶桑社 コーエーテクモ 八千代エンジニヤリング ヤマハ発動機 トヨタ車体 カネカ 日本精工 三菱電機 ダイフク デンカ 大同特殊鋼 小野薬品 住友ファーマ 阪神高速 NEXCO東日本 NEXCO中日本 大阪メトロ 成田国際空港 中国電力 西日本新聞 北海道新聞 河北新報 中国新聞 時事通信 富士フイルムビジネスイノベーション 日本ガイシ",
+58:"レイヤーズコンサルティング 山田コンサルティング 農中情報システム 三菱UFJニコス ゆうちょ銀行 りそな銀行 大同生命 松井証券 マネックス証券 三井住友海上あいおい生命保険 あいおいニッセイ同和損保 SBIホールディングス 千葉銀行 JA三井リース みずほリース NTTファイナンス 長谷工コーポレーション タカラトミー ハウス食品 ロッテ ヤクルト エア・ウォーター 日本触媒 荏原製作所 日東電工 日立建機 富士電機 大鵬薬品 北陸電力 沖縄電力 NEXCO西日本 名古屋鉄道 北海道電力 四国電力 産経新聞 新潟日報 静岡新聞 信濃毎日新聞 京都新聞 神戸新聞 山陽新聞 豊島 蝶理 日立ハイテク 三洋貿易 日本ゼオン DOWA DIC ENEOSグローブ アストモスエネルギー ENEOSオーシャント トヨタ不動産",
+57:"デロイトトーマツアクト SCSK Sansan ビジョナル オービック TIS 日立ソリューションズ キヤノンマーケティングジャパン 興和 東京海上日動システムズ オリックスシステム 住友倉庫 三菱地所レジデンス ソニー生命 楽天カード あおぞら銀行 SOMPOひまわり生命 かんぽ生命 アクサ生命 アース製薬 雪印メグミルク キユーピー ファーストリテイリング マイクロンメモリ ルネサス 電通東日本 UBE カシオ 王子HD シスメックス 日本光電 日本新薬 参天製薬 小林製薬 スバル DMG森精機 南海電気鉄道 NIKE Adidas ポニーキャニオン 帝人フロンティア マクニカ",
+56:"日本タタコンサルタンシーサービシズ トヨタシステムズ 日立システム マルハニチロ ADEKA 都築電気 NECソリューションイノベータ 三菱UFJトラストシステム ビジネスエンジニアリング マネーフォワード セゾンテクノロジー 富国生命 東京スター銀行 ソニー損保 太陽生命 岡三証券 日立造船 大日本印刷 読売広告社 セプテーニ 大広 積水ハウス 大和ハウス工業 戸田建設 五洋建設 前田建設工業 コクヨ ローム プロテリアル 山陽特殊鋼 アシックス リコー HOYA 日粉 ミルボン 日清紡 三菱自動車 マツダ ロジスティード 郵船ロジスティクス 第一実業 神鋼商事 日本紙パルプ商事",
+55:"ニトリ ニッセイ情報テクノロジー 丸紅情報システム 船井総研 プロレドパートナーズ プラスアルファコンサルティング 静岡銀行 中央労働金庫 福岡銀行 京都銀行 朝日生命 大樹生命 4大生保(営業職) イーデザイン損保 電通西日本 ダイハツ 三井住友建設 奥村組 テルモ コニカミノルタ TDK GSユアサ SHARP 三菱鉛筆 日本軽金属 ジェイテクト 日鉄鉱業 リクシル 久光製薬 TOPPANホールディングス リンクアンドモチベーション 商船三井システムズ ユアサ商事",
+54:"スズキ ※東京ドーム ※三越伊勢丹 ※Sky SHIFT JFEシステムズ NECネッツエスアイ NTTデータアイ 第一生命テクノクロス 大塚商会 WorksHumanIntelligence オープンハウス 野村不動産ソリューションズ NTTファシリティーズ JACCS トヨタファイナンス 東京応化工業 日野自動車 ヤンマーHD 沖電気工業 マックス ニデック SEIKO 古河機械金属 YKK 明電舎 クレハ 日油 日本製鋼所 オルガノ SMC UACJ 住友ゴム工業 日本電気硝子 日清オイリオ 三井E&S JMU GSユアサ 日本製紙 ツムラ 杏林製薬 住友ベークライト 日本曹達 日本特殊陶業 三菱製鋼 旭化成ホームズ 澁澤倉庫 安田倉庫 守谷商会 佐藤商事 因幡電機産業 伊藤忠丸紅住商テクノスチール 丸紅エネルギー セブン銀行 クレディセゾン 住信SBIネット銀行 日本カストディ銀行 日本マスタートラスト信託銀行 NTTTCリース レバレジーズ ISS リアライズ 小学館集英社プロダクツ BS日テレ BS朝日 GMOインターネットグループ SOMPOシステムズ 三井情報",
+53:"関西みらい銀行 西日本シティ銀行 ソニー銀行 paypay銀行 パーソルキャリア freee 昭和リース 東銀リース JECC イオンリテール 宝ホールディングス アサヒグループ食品 味の素冷凍食品 東洋水産 東洋紡 トクヤマ 東亞合成 日本ペイント 関西ペイント 大王製紙 太平洋セメント UBE三菱セメント SUMCO 愛知製鋼 栗本鐵工所 フジクラ 豊田合成 ウシオ電機 住友理工 TOYOTIRE 大成有楽不動産 富士石油 阪急阪神百貨店 三愛オブリ 東海東京フィナンシャルHD NECキャピタルソリューション 持田製薬 安藤ハザマ 加賀電子 ホンダトレーディング 山善 伊藤忠建材 東京エレクトロンデバイス 豊通マシナリー ダイワボウ情報システム コベルコシステム DTS MS&ADシステムズ マネーフォワード クイック 三井不動産リアルティ",
+52:"国分 伯東 メルセデスベンツジャパン 富士通エフサス 中国銀行 住友三井オートサービス TMEIC ダイヘン ニプロ キヤノンメディカルシステムズ カワサキモータース 横浜ゴム 住友電装 今治造船 中外炉工業 アイリスオーヤマ 味の素AGF 昭和産業 レンゴー ゼリア新薬工業 熊谷組 鴻池組 大気社 ジクシス NTTビジネスソリューションズ NTTデータ関西 NTTテクノクロス JR東日本情報システム マイナビ パソナ 東急リバブル",
+51:"富士ソフト JTBエンジャパン 三井住友トラスト不動産 スタイレム瀧定大阪 日本出版販売 トーハン 花王グループカスタマーマーケティング MIXI インフォコム 百五銀行 北國フィナンシャルHD 伊予銀行 アルプスアルパイン イビデン 浜松ホトニクス トプコン ソシオネクスト 東京精密 UDトラックス 村田機械 Jオイルミルズ 極洋 鳥居薬品 佐藤製薬 リンテック ローランド アイホン 三機工業 静岡ガス ぴあ",
+50:"西華産業 ヤギ 三谷商事 郵船商事 帝国データバンク パナソニックインフォメーションシステムズ TKC 北海道銀行 京葉銀行 愛知FG 全国生協連 三井住友トラスト・パナソニックファイナンス 東北新社 デンソーテン JVCケンウッド 堀場製作所 ミネベアミツミ シチズン時計 豊田鉄工 リケンビタミン 日本化薬 大京"
+};
+
+const order = Object.keys(T).map(Number).sort((a,b)=>b-a);
+
+const GROUPS = [
+  {min:73,max:75,label:"海外トップ大勝ち"},
+  {min:70,max:72,label:"東京一科優秀層勝ち"},
+  {min:67,max:69,label:"早慶地帝優秀層/東京一科勝ち"},
+  {min:63,max:66,label:"早慶地帝勝ち"},
+  {min:60,max:62,label:"MARCH関関同立優秀層勝ち"},
+  {min:55,max:59,label:"MARCH関関同立勝ち"},
+  {min:50,max:54,label:"MARCH関関同立妥当"}
+];
+function groupOf(t){ const g = GROUPS.find(g=>t>=g.min && t<=g.max); return g ? g.label : ''; }
+
+// build search index: name -> [tiers]
+const index = new Map();
+order.forEach(t=>{
+  T[t].split(/\s+/).filter(Boolean).forEach(name=>{
+    if(!index.has(name)) index.set(name, []);
+    index.get(name).push(t);
+  });
+});
+const allNames = [...index.keys()];
+
+function render(){
+  const tiersEl = document.getElementById('tiers');
+  let html = '';
+  let prevLabel = null;
+  order.forEach(t=>{
+    const names = T[t].split(/\s+/).filter(Boolean);
+    html += `<details class="tier">
+      <summary><span class="badge">${t}</span><span>偏差値${t}</span><span class="count">${names.length}社</span></summary>
+      <div class="companies">${names.map(n=>`<span class="co">${esc(n)}</span>`).join('')}</div>
+    </details>`;
+    const lbl = groupOf(t);
+    const nextIdx = order.indexOf(t)+1;
+    const nextLbl = nextIdx < order.length ? groupOf(order[nextIdx]) : null;
+    if(lbl && lbl !== nextLbl){
+      html += `<div class="grouplabel">↑ ${esc(lbl)}</div>`;
+    }
+  });
+  tiersEl.innerHTML = html;
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function search(q){
+  const box = document.getElementById('results');
+  q = q.trim();
+  if(!q){ box.innerHTML=''; return; }
+  const ql = q.toLowerCase();
+  const hits = allNames.filter(n=>n.toLowerCase().includes(ql)).slice(0,40);
+  if(hits.length===0){
+    box.innerHTML = `<p class="empty">「${esc(q)}」に一致する企業は見つかりませんでした。表記ゆれ（例：株式会社の有無、略称）を変えて試してみてください。</p>`;
+    return;
+  }
+  box.innerHTML = hits.map(n=>{
+    const ts = index.get(n).sort((a,b)=>b-a);
+    const line = ts.map(t=>`【${t}】${groupOf(t)}`).join(' / ');
+    return `<div class="hit"><div class="rank">${ts[0]}</div><div><div class="hitname">${esc(n)}</div><div class="hitmeta">偏差値 ${line}</div></div></div>`;
+  }).join('');
+}
+
+document.getElementById('q').addEventListener('input', e=>search(e.target.value));
+render();
+</script>
+</body>
+</html>
